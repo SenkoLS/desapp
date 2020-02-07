@@ -6,7 +6,7 @@ from tkinter import filedialog
 import codecs
 
 
-class Main(tk.Frame):
+class DesApp(tk.Frame):
     def __init__(self, root):
         super().__init__(root)
         self.initMain()
@@ -193,9 +193,9 @@ class Main(tk.Frame):
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = Main(root)
+    app = DesApp(root)
     app.pack()
-    root.title("Шифрование данных алгоритмом Des")
+    root.title("Шифрование данных алгоритмом Des. Версия 1.0-SNAPSHOT.")
     root.geometry("800x700+300+45")
     root.resizable(False, False)
     root.mainloop()
