@@ -4,6 +4,12 @@ from tkinter import *
 from tkinter import filedialog
 
 from Des import Des
+import matplotlib
+
+matplotlib.use("TkAgg")
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT
+from matplotlib.figure import Figure
 
 
 class DesApp(tk.Frame):
@@ -108,12 +114,12 @@ class DesApp(tk.Frame):
         btn_save_file_dialog.pack(side=tk.LEFT, padx=5, pady=5)
 
         btn_show_graph = tk.Button(toolbar,
-                                         text="Графики",
-                                         command=self.generate_graph,
-                                         bg="#d7d8e0",
-                                         bd=0,
-                                         compound=tk.BOTTOM,
-                                         image=self.graph_image)
+                                   text="Графики",
+                                   command=self.generate_graph,
+                                   bg="#d7d8e0",
+                                   bd=0,
+                                   compound=tk.BOTTOM,
+                                   image=self.graph_image)
         btn_show_graph.pack(side=tk.LEFT, padx=5, pady=5)
 
     def open_file_dialog(self):
@@ -226,7 +232,13 @@ class DesApp(tk.Frame):
         self.chipered_txt_hex.insert(END, ":".join("{:02x}".format(ord(c)) for c in self.deciphered_text))
 
     def generate_graph(self):
-        return 1
+        master2 = tk.Tk()
+        app = DesApp(root)
+        app.pack()
+        master2.geometry("750x550+250+170")
+        master2.title("Графики лавинного эффекта")
+        master2.mainloop()
+
 
 if __name__ == "__main__":
     root = tk.Tk()
