@@ -37,11 +37,15 @@ class Des():
         result = list()
         for block in text_blocks:
             block = self.string_to_bit_array(block)
+            if cf.AVALANCHE:
+                print(block)
             # Первоначальная перестановка в блоке в соответствии с матрицей IP
             block = self.permut(block, cf.IP)
             left, right = self.nsplit(block, 32)
             tmp = None
             for i in range(16):
+                if i > 0:
+                    cf.AVALANCHE = False
                 # Расширяем правую часть с 32 битной последовательности до 48 битной последовательности
                 d_e = self.permut(right, cf.E)
                 if action == cf.ENCRYPT:
@@ -131,7 +135,7 @@ class Des():
     def string_to_bit_array(self, text):
         array = list()
         for char in text:
-            # Получить значение символа (1 байт)
+            # Получить значение строки бит для 1 байт
             binval = self.get_bin_as_str(char, 8)
             # Добавление бит в окончательный список
             array.extend([int(x) for x in list(binval)])
@@ -154,3 +158,12 @@ class Des():
     # Разбивает список на подсписки размера "n"
     def nsplit(self, s, n):
         return [s[k:k + n] for k in range(0, len(s), n)]
+
+    def set_num_bit(self, number_bit_key, number_bit_text):
+        cf.AVALANCHE = True
+        self.number_bit_key = number_bit_key
+        self.number_bit_text = number_bit_text
+
+    def get_avalanche_effect_param(self):
+        round_e = [x for x in range(1, 17)]
+        return {'text': [round_e, []], 'key': [round_e, []]}

@@ -4,11 +4,12 @@ from tkinter import *
 from tkinter import filedialog
 
 from Des import Des
+
 import matplotlib
 
-matplotlib.use("TkAgg")
+matplotlib.use('TkAgg')
+import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT
 from matplotlib.figure import Figure
 
 
@@ -28,12 +29,31 @@ class DesApp(tk.Frame):
         self.decrypt_image = tk.PhotoImage(file="decrypt.png")
         self.graph_image = tk.PhotoImage(file="graph.png")
 
+        # Создание поля для инверсии бита ключа с соответствующим номером
+        list_number_bit_frame = Frame(self)
+        list_number_bit_frame.pack(fill=X, expand=True)
+        key_lbl_num_bit = Label(list_number_bit_frame, text="Бит ключа:", width=15)
+        key_lbl_num_bit.pack(side=LEFT, padx=5, pady=5)
+        self.list_number_bit_key = Listbox(list_number_bit_frame, height=1, width=73)
+        [self.list_number_bit_key.insert(END, x) for x in range(1, 57)]
+        self.list_number_bit_key.pack(side=LEFT, padx=5, pady=5, expand=True)
+
+        # Создание поля для инверсии бита текста с соответствующим номером
+        text_lbl_num_bit = Label(list_number_bit_frame, text="Бит текста:", width=10)
+        text_lbl_num_bit.pack(side=LEFT, padx=5, pady=5)
+        self.list_number_bit_text = Listbox(list_number_bit_frame, height=1, width=73)
+        [self.list_number_bit_text.insert(END, x) for x in range(1, 65)]
+        self.list_number_bit_text.pack(side=LEFT, padx=5, pady=5, expand=True)
+
+        # Создание поля для отображения ключа
         key_frame = Frame(self)
         key_frame.pack(fill=BOTH)
         key_lbl = Label(key_frame, text="Ключ:", width=15)
         key_lbl.pack(side=LEFT, padx=5, pady=5)
         self.key_entry = Entry(key_frame, width=73)
         self.key_entry.pack(side=LEFT, padx=5, expand=True)
+
+        # Создание поля для отображения ключа в HEX
         key_lbl_hex = Label(key_frame, text="HEX ключа:", width=10)
         key_lbl_hex.pack(side=LEFT, padx=5, pady=5)
         self.key_entry_hex = Entry(key_frame, width=72)
@@ -52,7 +72,7 @@ class DesApp(tk.Frame):
 
         chipered_frame = Frame(self)
         chipered_frame.pack(fill=BOTH)
-        chipered_lbl = Label(chipered_frame, text="Шифр/Текст", width=15)
+        chipered_lbl = Label(chipered_frame, text="Шифр", width=15)
         chipered_lbl.pack(side=LEFT, padx=5, pady=5)
         self.chipered_text_frame = Text(chipered_frame, width=55, height=10)
         self.chipered_text_frame.pack(side=LEFT, pady=5, padx=5, expand=True)
@@ -194,8 +214,12 @@ class DesApp(tk.Frame):
         text = self.string_from_file
         des = Des()
         key, text = self.get_key_and_text_changes(key, text)
+        # Параметры номеров бит для ключа и текста (применяется для расчета лавинного эффекта шифрования)
+        des.set_num_bit(self.list_number_bit_key.get(ACTIVE), self.list_number_bit_text.get(ACTIVE))
         self.ciphered_text = des.encrypt(key, text)
         self.time_spent = des.time_spent
+        # Получаем словарь с данными для построения графиков
+        self.avalanche_effect_param = des.get_avalanche_effect_param()
 
         message = str(str(datetime.datetime.now()) +
                       "\r\nПроизведено шифрование."
@@ -233,11 +257,39 @@ class DesApp(tk.Frame):
 
     def generate_graph(self):
         master2 = tk.Tk()
-        app = DesApp(root)
-        app.pack()
+        app = GraphPage(root)
         master2.geometry("750x550+250+170")
         master2.title("Графики лавинного эффекта")
         master2.mainloop()
+
+
+class GraphPage:
+    def __init__(self, window):
+        self.window = window
+        self.plot()
+
+    def plot(self):
+        toolbar = tk.Frame(bg='#d7d8e0', bd=2)
+        toolbar.pack(side=tk.TOP, fill=tk.X)
+
+        x = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        v = np.array([16, 16.31925, 17.6394, 16.003, 17.2861, 17.3131, 19.1259, 18.9694, 22.0003, 22.81226])
+        p = np.array([16.23697, 17.31653, 17.22094, 17.68631, 17.73641, 18.6368,
+                      19.32125, 19.31756, 21.20247, 22.41444, 22.11718, 22.12453])
+
+        fig = Figure(figsize=(6, 6))
+        a = fig.add_subplot(111)
+        a.scatter(v, x, color='red')
+        a.plot(p, range(2 + max(x)), color='blue')
+        a.invert_yaxis()
+
+        a.set_title("Estimation Grid", fontsize=16)
+        a.set_ylabel("Y", fontsize=14)
+        a.set_xlabel("X", fontsize=14)
+
+        canvas = FigureCanvasTkAgg(fig, master=self.window)
+        canvas.get_tk_widget().pack()
+        canvas.draw()
 
 
 if __name__ == "__main__":
