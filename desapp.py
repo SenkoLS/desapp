@@ -1,7 +1,7 @@
 import datetime
 import tkinter as tk
 from tkinter import *
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 
 from Des import Des
 
@@ -36,13 +36,24 @@ class DesApp(tk.Frame):
         list_number_bit_frame.pack(fill=X, expand=True)
         key_lbl_num_bit = Label(list_number_bit_frame, text="Бит ключа:", width=15)
         key_lbl_num_bit.pack(side=LEFT, padx=5, pady=5)
-        self.list_number_bit_key = Listbox(list_number_bit_frame, height=1, width=73)
+        self.var_key = IntVar()
+        self.chk_key = Checkbutton(list_number_bit_frame,
+                                   text="Вкл/выкл",
+                                   variable=self.var_key,
+                                   onvalue=1,
+                                   offvalue=0)
+        self.chk_key.pack(side=LEFT, padx=5, pady=5)
+        self.list_number_bit_key = Listbox(list_number_bit_frame, height=1, width=58)
         [self.list_number_bit_key.insert(END, x) for x in range(1, 57)]
         self.list_number_bit_key.pack(side=LEFT, padx=5, pady=5, expand=True)
 
         # Создание поля для инверсии бита текста с соответствующим номером
         text_lbl_num_bit = Label(list_number_bit_frame, text="Бит текста:", width=10)
         text_lbl_num_bit.pack(side=LEFT, padx=5, pady=5)
+        self.var_text = IntVar()
+        self.chk_text = Checkbutton(list_number_bit_frame, text="Вкл/выкл", variable=self.var_text, onvalue=1,
+                                    offvalue=0)
+        self.chk_text.pack(side=LEFT, padx=5, pady=5)
         self.list_number_bit_text = Listbox(list_number_bit_frame, height=1, width=73)
         [self.list_number_bit_text.insert(END, x) for x in range(1, 65)]
         self.list_number_bit_text.pack(side=LEFT, padx=5, pady=5, expand=True)
@@ -218,7 +229,10 @@ class DesApp(tk.Frame):
         key, text = self.get_key_and_text_changes(key, text)
 
         # Параметры номеров бит для ключа и текста (применяется для расчета лавинного эффекта шифрования)
-        des.set_num_bit(self.list_number_bit_key.get(ACTIVE), self.list_number_bit_text.get(ACTIVE))
+        des.set_num_bit(self.list_number_bit_key.get(ACTIVE),
+                        self.list_number_bit_text.get(ACTIVE),
+                        self.var_key.get(),
+                        self.var_text.get())
         self.ciphered_text = des.encrypt(key, text)
         self.time_spent = des.time_spent
 
@@ -264,8 +278,15 @@ class DesApp(tk.Frame):
         ax = plt.subplot()
         ax.plot(list(self.avalanche_effect_param[0]),
                 list(self.avalanche_effect_param[1]), color='tab:orange')
-        ax.set(xlabel='Раунды шифрования', ylabel='Количество измененных бит',
-               title='Изменен 1 бит в блоке исходного текста')
+
+        if self.var_key.get() == 1:
+            title = 'Изменен 1 бит в ключе'
+        elif self.var_text.get() == 1:
+            title = 'Изменен 1 бит в исходном тексте'
+        else:
+            title = ''
+        ax.set(xlabel='Раунды шифрования', ylabel='Количество измененных бит', title=title)
+
         ax.grid()
         plt.show()
 

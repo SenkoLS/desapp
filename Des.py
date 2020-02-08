@@ -229,8 +229,17 @@ class Des():
     def nsplit(self, s, n):
         return [s[k:k + n] for k in range(0, len(s), n)]
 
-    def set_num_bit(self, number_bit_key, number_bit_text):
-        cf.AVALANCHE_KEY = True
+    def set_num_bit(self, number_bit_key, number_bit_text, key, text):
+        if key == 1:
+            cf.AVALANCHE_KEY = True
+            cf.AVALANCHE_TEXT = False
+        elif text == 1:
+            cf.AVALANCHE_KEY = False
+            cf.AVALANCHE_TEXT = True
+        else:
+            cf.AVALANCHE_KEY = False
+            cf.AVALANCHE_TEXT = False
+
         self.number_bit_key = number_bit_key
         self.number_bit_text = number_bit_text
 
