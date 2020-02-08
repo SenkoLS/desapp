@@ -214,12 +214,15 @@ class DesApp(tk.Frame):
         text = self.string_from_file
         des = Des()
         key, text = self.get_key_and_text_changes(key, text)
+
         # Параметры номеров бит для ключа и текста (применяется для расчета лавинного эффекта шифрования)
         des.set_num_bit(self.list_number_bit_key.get(ACTIVE), self.list_number_bit_text.get(ACTIVE))
         self.ciphered_text = des.encrypt(key, text)
         self.time_spent = des.time_spent
+
         # Получаем словарь с данными для построения графиков
         self.avalanche_effect_param = des.get_avalanche_effect_param()
+        print(self.avalanche_effect_param)
 
         message = str(str(datetime.datetime.now()) +
                       "\r\nПроизведено шифрование."
