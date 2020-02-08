@@ -25,46 +25,95 @@ class Des():
         self.text = text
         self.start_alg = time.time()
 
+        # Параметры для подсчета лавинного эффекта
+        self.list_count_dif_bit_for_text_block = list()
+        self.list_count_dif_bit_for_key_block = list()
+
         if padding and action == cf.ENCRYPT:
             self.add_padding()
         elif len(self.text) % 8 != 0:
             raise "Размер текста должен быть кратным 8"
 
         # Создаем ключи
-        self.get_keys()
+        self.keys = self.get_keys(False)
+
+        # Создаем ключи для расчета лавинного эффекта
+        if cf.AVALANCHE_KEY:
+            self.keys_ = self.get_keys(True)
+
         text_blocks = self.nsplit(self.text, 8)
         result = list()
 
-        # Параметры для подсчета лавинного эффекта
-        self.list_count_dif_bit_for_text_block = list()
-        self.list_count_dif_bit_for_key_block = list()
-
         for block in text_blocks:
             block = self.string_to_bit_array(block)
+            tmp = None
+            tmp_ = None
+            left_ = None
+            right_ = None
+
+            if cf.AVALANCHE_TEXT:
+                block_ = self.invert_bit_in_block(block, self.number_bit_text)
+                block_ = self.permut(block_, cf.IP)
+                left_, right_ = self.nsplit(block_, 32)
+                tmp_ = None
+
+            if cf.AVALANCHE_KEY:
+                block_ = list(block)
+                block_ = self.permut(block_, cf.IP)
+                left_, right_ = self.nsplit(block_, 32)
+                tmp_ = None
 
             # Первоначальная перестановка в блоке в соответствии с матрицей IP
             block = self.permut(block, cf.IP)
             left, right = self.nsplit(block, 32)
-            tmp = None
-
-            if cf.AVALANCHE:
-                block_ = self.invert_bit_in_block(block)
-                left_, right_ = self.nsplit(block_, 32)
-                tmp_ = None
 
             for i in range(16):
-                left, right = self.complete_round(action, i, left, right)
+                # Расширяем правую часть с 32 битной последовательности до 48 битной последовательности
+                d_e = self.permut(right, cf.E)
+                if action == cf.ENCRYPT:
+                    tmp = self.xor(self.keys[i], d_e)
+                else:
+                    tmp = self.xor(self.keys[15 - i], d_e)
+                tmp = self.substitute(tmp)
+                tmp = self.permut(tmp, cf.P)
+                tmp = self.xor(left, tmp)
+                left = right
+                right = tmp
 
-                # Подсчет изменений количества бит на раунд текстового блока(при включенном флаге)
-                if cf.AVALANCHE:
-                    left_, right_ = self.complete_round(action, i, left_, right_)
+                # Подсчет изменений количества изм-ся бит при измен-ии 1 бита исх текста
+                if cf.AVALANCHE_TEXT:
+                    d_e_ = self.permut(right_, cf.E)
+                    if action == cf.ENCRYPT:
+                        tmp_ = self.xor(self.keys[i], d_e_)
+                    else:
+                        tmp_ = self.xor(self.keys[15 - i], d_e_)
+                    tmp_ = self.substitute(tmp_)
+                    tmp_ = self.permut(tmp_, cf.P)
+                    tmp_ = self.xor(left_, tmp_)
+                    left_ = right_
+                    right_ = tmp_
+                    count_dif_bit = self.count_diff_bit_in_round(right + left, right_ + left_)
+                    self.list_count_dif_bit_for_text_block.append(count_dif_bit)
+
+                if cf.AVALANCHE_KEY:
+                    d_e_ = self.permut(right_, cf.E)
+                    if action == cf.ENCRYPT:
+                        tmp_ = self.xor(self.keys_[i], d_e_)
+                    else:
+                        tmp_ = self.xor(self.keys_[15 - i], d_e_)
+                    tmp_ = self.substitute(tmp_)
+                    tmp_ = self.permut(tmp_, cf.P)
+                    tmp_ = self.xor(left_, tmp_)
+                    left_ = right_
+                    right_ = tmp_
                     count_dif_bit = self.count_diff_bit_in_round(right + left, right_ + left_)
                     self.list_count_dif_bit_for_text_block.append(count_dif_bit)
 
             # Мердж частей и завершающая перестановка
             result += self.permut(right + left, cf.IP_1)
             # Выключаем сбор данных по лавинному эффекту (прогон только для одного блока шифрования)
-            cf.AVALANCHE = False
+            cf.AVALANCHE_TEXT = False
+            cf.AVALANCHE_KEY = False
         final_res = self.bit_array_to_string(result)
 
         # Расчет времени работы алгоритма
@@ -75,20 +124,6 @@ class Des():
             return self.remove_padding(final_res)
         else:
             return final_res
-
-    def complete_round(self, action, i, left, right):
-        # Расширяем правую часть с 32 битной последовательности до 48 битной последовательности
-        d_e = self.permut(right, cf.E)
-        if action == cf.ENCRYPT:
-            tmp = self.xor(self.keys[i], d_e)
-        else:
-            tmp = self.xor(self.keys[15 - i], d_e)
-        tmp = self.substitute(tmp)
-        tmp = self.permut(tmp, cf.P)
-        tmp = self.xor(left, tmp)
-        left = right
-        right = tmp
-        return left, right
 
     def count_diff_bit_in_round(self, block1, block2):
         count_dif_bit = 0
@@ -122,9 +157,14 @@ class Des():
         return [x ^ y for x, y in zip(t1, t2)]
 
     # Получение всех ключей в итоговый массив
-    def get_keys(self):
-        self.keys = []
+    def get_keys(self, flag):
+        keys = []
+        left_ = None
+        right_ = None
         key = self.string_to_bit_array(self.password)
+        # Флаг инвертирования бита в ключе (True - инвертировать нужный бит)
+        if flag:
+            key = self.invert_bit_in_block(key, self.number_bit_key)
         # Первоначальная перестановка ключа по матрице G
         key = self.permut(key, cf.G)
         # Разбивка ключа пополам
@@ -133,15 +173,8 @@ class Des():
             left, right = self.shift(left, right, cf.SHIFT[i])
             merged_key = left + right
             # Завершающая обработка ключа по матрице H
-            self.keys.append(self.permut(merged_key, cf.H))
-
-            # Подсчет изменений количества бит на раунд ключевого блока (при включенном флаге)
-            if cf.AVALANCHE:
-                count_dif_bit = 0
-                for one_tuple in zip(key, left + right):
-                    if one_tuple[0] != one_tuple[1]:
-                        count_dif_bit += 1
-                # self.list_count_dif_bit_for_text_block.append(count_dif_bit)
+            keys.append(self.permut(merged_key, cf.H))
+        return keys
 
     # Сдвигает список заданных значений
     def shift(self, left, right, n):
@@ -197,19 +230,18 @@ class Des():
         return [s[k:k + n] for k in range(0, len(s), n)]
 
     def set_num_bit(self, number_bit_key, number_bit_text):
-        cf.AVALANCHE = True
+        cf.AVALANCHE_KEY = True
         self.number_bit_key = number_bit_key
         self.number_bit_text = number_bit_text
 
     def get_avalanche_effect_param(self):
         round_e = [x for x in range(1, 17)]
-        return {'text': [round_e, self.list_count_dif_bit_for_text_block],
-                'key': [round_e, self.list_count_dif_bit_for_key_block]}
+        return [round_e, self.list_count_dif_bit_for_text_block]
 
-    def invert_bit_in_block(self, block):
+    def invert_bit_in_block(self, block, type_number_bit):
         new_block = list(block)
-        if new_block[self.number_bit_text-1] == 1:
-            new_block[self.number_bit_text-1] = 0
+        if new_block[type_number_bit - 1] == 1:
+            new_block[type_number_bit - 1] = 0
         else:
-            new_block[self.number_bit_text-1] = 1
+            new_block[type_number_bit - 1] = 1
         return new_block

@@ -5,9 +5,11 @@ from tkinter import filedialog
 
 from Des import Des
 
-import matplotlib
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
-matplotlib.use('TkAgg')
+mpl.use('TkAgg')
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -222,7 +224,6 @@ class DesApp(tk.Frame):
 
         # Получаем словарь с данными для построения графиков
         self.avalanche_effect_param = des.get_avalanche_effect_param()
-        print(self.avalanche_effect_param)
 
         message = str(str(datetime.datetime.now()) +
                       "\r\nПроизведено шифрование."
@@ -259,40 +260,14 @@ class DesApp(tk.Frame):
         self.chipered_txt_hex.insert(END, ":".join("{:02x}".format(ord(c)) for c in self.deciphered_text))
 
     def generate_graph(self):
-        master2 = tk.Tk()
-        app = GraphPage(root)
-        master2.geometry("750x550+250+170")
-        master2.title("Графики лавинного эффекта")
-        master2.mainloop()
-
-
-class GraphPage:
-    def __init__(self, window):
-        self.window = window
-        self.plot()
-
-    def plot(self):
-        toolbar = tk.Frame(bg='#d7d8e0', bd=2)
-        toolbar.pack(side=tk.TOP, fill=tk.X)
-
-        x = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-        v = np.array([16, 16.31925, 17.6394, 16.003, 17.2861, 17.3131, 19.1259, 18.9694, 22.0003, 22.81226])
-        p = np.array([16.23697, 17.31653, 17.22094, 17.68631, 17.73641, 18.6368,
-                      19.32125, 19.31756, 21.20247, 22.41444, 22.11718, 22.12453])
-
-        fig = Figure(figsize=(6, 6))
-        a = fig.add_subplot(111)
-        a.scatter(v, x, color='red')
-        a.plot(p, range(2 + max(x)), color='blue')
-        a.invert_yaxis()
-
-        a.set_title("Estimation Grid", fontsize=16)
-        a.set_ylabel("Y", fontsize=14)
-        a.set_xlabel("X", fontsize=14)
-
-        canvas = FigureCanvasTkAgg(fig, master=self.window)
-        canvas.get_tk_widget().pack()
-        canvas.draw()
+        fig = plt.figure("График зависимости числа бит, изменившихся в зашифрованном тексте")
+        ax = plt.subplot()
+        ax.plot(list(self.avalanche_effect_param[0]),
+                list(self.avalanche_effect_param[1]), color='tab:orange')
+        ax.set(xlabel='Раунды шифрования', ylabel='Количество измененных бит',
+               title='Изменен 1 бит в блоке исходного текста')
+        ax.grid()
+        plt.show()
 
 
 if __name__ == "__main__":
