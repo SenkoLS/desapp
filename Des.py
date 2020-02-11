@@ -32,7 +32,8 @@ class Des():
         if padding and action == cf.ENCRYPT:
             self.add_padding()
         elif len(self.text) % 8 != 0:
-            raise "Размер текста должен быть кратным 8"
+            self.add_spaces_to_end_file()
+            # raise "Размер текста должен быть кратным 8"
 
         # Создаем ключи
         self.keys = self.get_keys(False)
@@ -69,45 +70,16 @@ class Des():
 
             for i in range(16):
                 # Расширяем правую часть с 32 битной последовательности до 48 битной последовательности
-                d_e = self.permut(right, cf.E)
-                if action == cf.ENCRYPT:
-                    tmp = self.xor(self.keys[i], d_e)
-                else:
-                    tmp = self.xor(self.keys[15 - i], d_e)
-                tmp = self.substitute(tmp)
-                tmp = self.permut(tmp, cf.P)
-                tmp = self.xor(left, tmp)
-                left = right
-                right = tmp
+                left, right = self.complete_round(action, i, left, right, self.keys)
 
                 # Подсчет изменений количества изм-ся бит при измен-ии 1 бита исх текста
                 if cf.AVALANCHE_TEXT:
-                    d_e_ = self.permut(right_, cf.E)
-                    if action == cf.ENCRYPT:
-                        tmp_ = self.xor(self.keys[i], d_e_)
-                    else:
-                        tmp_ = self.xor(self.keys[15 - i], d_e_)
-                    tmp_ = self.substitute(tmp_)
-                    tmp_ = self.permut(tmp_, cf.P)
-                    tmp_ = self.xor(left_, tmp_)
-                    left_ = right_
-                    right_ = tmp_
-                    count_dif_bit = self.count_diff_bit_in_round(right + left, right_ + left_)
-                    self.list_count_dif_bit_for_text_block.append(count_dif_bit)
+                    left_, right_ = self.complete_round(action, i, left_, right_, self.keys)
+                    self.set_list_count_dif_bit_for_text_block(left, left_, right, right_)
 
                 if cf.AVALANCHE_KEY:
-                    d_e_ = self.permut(right_, cf.E)
-                    if action == cf.ENCRYPT:
-                        tmp_ = self.xor(self.keys_[i], d_e_)
-                    else:
-                        tmp_ = self.xor(self.keys_[15 - i], d_e_)
-                    tmp_ = self.substitute(tmp_)
-                    tmp_ = self.permut(tmp_, cf.P)
-                    tmp_ = self.xor(left_, tmp_)
-                    left_ = right_
-                    right_ = tmp_
-                    count_dif_bit = self.count_diff_bit_in_round(right + left, right_ + left_)
-                    self.list_count_dif_bit_for_text_block.append(count_dif_bit)
+                    left_, right_ = self.complete_round(action, i, left_, right_, self.keys_)
+                    self.set_list_count_dif_bit_for_text_block(left, left_, right, right_)
 
             # Мердж частей и завершающая перестановка
             result += self.permut(right + left, cf.IP_1)
@@ -124,6 +96,23 @@ class Des():
             return self.remove_padding(final_res)
         else:
             return final_res
+
+    def set_list_count_dif_bit_for_text_block(self, left, left_, right, right_):
+        count_dif_bit = self.count_diff_bit_in_round(right + left, right_ + left_)
+        self.list_count_dif_bit_for_text_block.append(count_dif_bit)
+
+    def complete_round(self, action, i, left, right, keys):
+        d_e = self.permut(right, cf.E)
+        if action == cf.ENCRYPT:
+            tmp = self.xor(keys[i], d_e)
+        else:
+            tmp = self.xor(keys[15 - i], d_e)
+        tmp = self.substitute(tmp)
+        tmp = self.permut(tmp, cf.P)
+        tmp = self.xor(left, tmp)
+        left = right
+        right = tmp
+        return left, right
 
     def count_diff_bit_in_round(self, block1, block2):
         count_dif_bit = 0

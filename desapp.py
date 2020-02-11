@@ -18,6 +18,31 @@ from matplotlib.figure import Figure
 class DesApp(tk.Frame):
     def __init__(self, root):
         super().__init__(root)
+        self.open_file_image = None
+        self.save_file_image = None
+        self.open_key_image = None
+        self.encrypt_image = None
+        self.decrypt_image = None
+        self.graph_image = None
+        self.var_key = None
+        self.chk_key = None
+        self.list_number_bit_key = None
+        self.var_text = None
+        self.chk_text = None
+        self.key_entry = None
+        self.key_entry_hex = None
+        self.txt = None
+        self.txt_hex = None
+        self.chipered_text_frame = None
+        self.chipered_txt_hex = None
+        self.log = None
+        self.string_from_key = None
+        self.string_from_file = None
+        self.type_saving_file = None
+        self.ciphered_text = None
+        self.time_spent = None
+        self.deciphered_text = None
+        self.avalanche_effect_param = None
         self.initMain()
 
     def initMain(self):
@@ -158,19 +183,21 @@ class DesApp(tk.Frame):
     def open_file_dialog(self):
         self.chipered_text_frame.delete("1.0", END)
         self.chipered_txt_hex.delete("1.0", END)
-        self.string_from_file = open(self.get_path_to_file_name(1), encoding="utf-8").read()
         self.txt.delete("1.0", END)
-        self.txt.insert(END, self.string_from_file)
         self.txt_hex.delete("1.0", END)
+        # self.string_from_file = open(self.get_path_to_file_name(1), encoding="utf-8").read()
+        self.string_from_file = open(self.get_path_to_file_name(1), encoding="UTF-8").read()
+        self.txt.insert(END, self.string_from_file)
         self.txt_hex.insert(END, ":".join("{:02x}".format(ord(c)) for c in self.string_from_file))
 
     def open_key_dialog(self):
         self.chipered_text_frame.delete("1.0", END)
         self.chipered_txt_hex.delete("1.0", END)
-        self.string_from_key = open(self.get_path_to_file_name(2), encoding="utf-8").read()
         self.key_entry.delete(0, END)
-        self.key_entry.insert(END, self.string_from_key)
         self.key_entry_hex.delete(0, END)
+        # self.string_from_key = open(self.get_path_to_file_name(2), encoding="utf-8").read()
+        self.string_from_key = open(self.get_path_to_file_name(2), encoding="UTF-8").read()
+        self.key_entry.insert(END, self.string_from_key)
         self.key_entry_hex.insert(END, ":".join("{:02x}".format(ord(c)) for c in self.string_from_key))
 
     def get_path_to_file_name(self, type):
@@ -276,6 +303,9 @@ class DesApp(tk.Frame):
     def generate_graph(self):
         fig = plt.figure("График зависимости числа бит, изменившихся в зашифрованном тексте")
         ax = plt.subplot()
+
+        print(list(self.avalanche_effect_param[0]),
+              list(self.avalanche_effect_param[1]))
         ax.plot(list(self.avalanche_effect_param[0]),
                 list(self.avalanche_effect_param[1]), color='tab:orange')
 
